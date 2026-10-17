@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PicoPDF - Minimalist & Private Local PDF Suite</title>
+  <meta name="description" content="PicoPDF: Minimalist cross-platform PDF suite. Compress to target size, Split pages, PDF to Image, AES-256 Encrypt, and Decrypt. 100% private, local, and offline on macOS and Windows.">
+  
+  <!-- Modern Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Local Vendor Libraries -->
+  <script src="vendor/pdf-lib.min.js"></script>
+  <script src="vendor/pdf.min.js"></script>
+  <script src="vendor/jszip.min.js"></script>
+</head>
+<body>
+  <!-- Ambient background glow elements -->
+  <div class="glow-orb orb-1" aria-hidden="true"></div>
+  <div class="glow-orb orb-2" aria-hidden="true"></div>
+  <div class="glow-orb orb-3" aria-hidden="true"></div>
+
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <path d="M12 18v-6"></path>
+            <path d="m9 15 3 3 3-3"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>PicoPDF <span class="suite-title">Suite</span></h1>
+          <span class="brand-badge">Private & Local</span>
+        </div>
+      </div>
+
+      <div class="header-badges">
+        <div class="platform-badge" title="Compatible with macOS and Windows">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"/>
+          </svg>
+          <span>Mac & Windows</span>
+        </div>
+        <div class="privacy-badge">
+          <span class="pulse-dot"></span>
+          <span>100% Local & Private</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Navigation Tool Tabs -->
+    <nav class="tool-navigation" aria-label="PDF Tools Navigation">
+      <div class="nav-tabs-wrapper">
+        <button type="button" class="tool-tab active" data-tool="compress" id="tabCompress">
+          <span class="tab-icon">🗜️</span>
+          <span class="tab-label">Compress PDF</span>
+        </button>
+        <button type="button" class="tool-tab" data-tool="split" id="tabSplit">
+          <span class="tab-icon">✂️</span>
+          <span class="tab-label">Split PDF</span>
+        </button>
+        <button type="button" class="tool-tab" data-tool="toImage" id="tabToImage">
+          <span class="tab-icon">🖼️</span>
+          <span class="tab-label">PDF to Image</span>
+        </button>
+        <button type="button" class="tool-tab" data-tool="encrypt" id="tabEncrypt">
+          <span class="tab-icon">🔒</span>
+          <span class="tab-label">Encrypt PDF</span>
+        </button>
+        <button type="button" class="tool-tab" data-tool="decrypt" id="tabDecrypt">
+          <span class="tab-icon">🔓</span>
+          <span class="tab-label">Decrypt / Remove Lock</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Subtitle / Tagline -->
+    <section class="hero-intro">
+      <p id="heroToolDescription" class="hero-description">
+        Compress your PDF documents down to an <strong>exact size limit</strong>. Powered by an adaptive resolution & quality algorithm that preserves maximum sharpness.
+      </p>
+    </section>
+
+    <!-- Active File Bar (Shown when a PDF is loaded across any tool) -->
+    <div id="activeFileBar" class="file-banner hidden">
+      <div class="file-info-col">
+        <div class="file-icon-badge" id="activeFileBadge">PDF</div>
+        <div class="file-details">
+          <h3 id="displayFileName" class="file-name">document.pdf</h3>
+          <div class="file-meta">
+            <span id="displayOriginalSize" class="meta-tag">2.66 MB</span>
+            <span id="displayPageCount" class="meta-tag">3 Pages</span>
+            <span id="displayDimensions" class="meta-tag">Letter / A4</span>
+            <span id="displayLockStatus" class="meta-tag lock-tag hidden">🔒 Password Protected</span>
+          </div>
+        </div>
+      </div>
+      <div class="file-actions-col">
+        <button type="button" id="changeFileBtn" class="btn btn-ghost btn-sm" title="Choose a different PDF">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          Change File
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- ========================================================
+           DROPZONE SECTION (Visible when no file is loaded)
+           ======================================================== -->
+      <section id="uploadSection" class="card dropzone-card">
+        <div id="dropZone" class="dropzone" tabindex="0" role="button" aria-label="Drop PDF file here or click to select">
+          <input type="file" id="pdfFileInput" accept="application/pdf" class="file-input-hidden">
+          
+          <div class="dropzone-content">
+            <div class="upload-icon-wrapper">
+              <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+            </div>
+            <h2 id="dropzoneTitle" class="upload-title">Drag & Drop your PDF here</h2>
+            <p class="upload-subtitle">or <span class="browse-link">browse from your computer</span></p>
+            <p class="upload-hint">Supports multi-page documents, scans, invoices, and password-protected PDFs</p>
+
+            <div class="sample-file-divider">
+              <span>OR TEST INSTANTLY</span>
+            </div>
+            
+            <button type="button" id="loadSampleBtn" class="btn btn-secondary btn-sm sample-btn">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              Load Sample 2.6 MB Presentation PDF
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           TOOL 1: COMPRESS PDF (TARGET SIZE)
+           ======================================================== -->
+      <section id="toolSectionCompress" class="tool-panel hidden">
+        <div class="card config-card">
+          <div class="target-size-container">
+            <div class="section-heading">
+              <div class="heading-with-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <circle cx="12" cy="12" r="6"></circle>
+                  <circle cx="12" cy="12" r="2"></circle>
+                </svg>
+                <h3>Target Size Limit</h3>
+              </div>
+              <span class="heading-badge">Adaptive Engine Target</span>
+            </div>
+
+            <p class="setting-desc">
+              Specify the maximum allowable file size. Our engine dynamically calculates optimal resolution and compression passes to hit your target.
+            </p>
+
+            <!-- Input Row: Number + Unit + Summary -->
+            <div class="target-input-row">
+              <div class="input-unit-group">
+                <div class="number-stepper">
+                  <button type="button" id="targetStepDown" class="step-btn" aria-label="Decrease target size">−</button>
+                  <input type="number" id="targetSizeValue" value="1.0" min="0.05" max="500" step="0.1" aria-label="Target file size value">
+                  <button type="button" id="targetStepUp" class="step-btn" aria-label="Increase target size">+</button>
+                </div>
+
+                <div class="unit-toggle" role="radiogroup" aria-label="Target file size unit">
+                  <button type="button" id="unitMB" class="unit-btn active" data-unit="MB">MB</button>
+                  <button type="button" id="unitKB" class="unit-btn" data-unit="KB">KB</button>
+                </div>
+              </div>
+
+              <div class="target-feedback">
+                <div class="target-exact-bytes" id="targetExactBytesDisplay">Target: 1.00 MB (1,048,576 bytes)</div>
+                <div class="target-reduction-pill" id="targetReductionEstimate">Reduction: ~62%</div>
+              </div>
+            </div>
+
+            <!-- Slider Control -->
+            <div class="slider-wrapper">
+              <div class="slider-labels">
+                <span id="sliderMinLabel">100 KB</span>
+                <span id="sliderCurrentLabel" class="current-slider-val">1.0 MB</span>
+                <span id="sliderMaxLabel">2.66 MB (Original)</span>
+              </div>
+              <input type="range" id="targetSizeSlider" min="50" max="2663" value="1000" class="custom-slider">
+              <div class="slider-ticks">
+                <span>Aggressive</span>
+                <span>Balanced</span>
+                <span>Light</span>
+              </div>
+            </div>
+
+            <!-- Quick Presets -->
+            <div class="presets-section">
+              <span class="presets-title">Quick Presets:</span>
+              <div class="preset-buttons">
+                <button type="button" class="preset-btn" data-preset="500KB">Strict 500 KB</button>
+                <button type="button" class="preset-btn active" data-preset="1MB">Web / Form 1 MB</button>
+                <button type="button" class="preset-btn" data-preset="2MB">Email 2 MB</button>
+                <button type="button" class="preset-btn" data-preset="50PCT">50% of Original</button>
+                <button type="button" class="preset-btn" data-preset="75PCT">25% Reduction</button>
+              </div>
+            </div>
+
+            <!-- Compression Mode Options -->
+            <div class="strategy-section">
+              <span class="strategy-title">Compression Profile:</span>
+              <div class="strategy-grid">
+                <label class="strategy-card active" for="strategyAdaptive">
+                  <input type="radio" name="compressionStrategy" id="strategyAdaptive" value="adaptive" checked>
+                  <div class="strategy-content">
+                    <div class="strategy-name">
+                      <span>Smart Adaptive</span>
+                      <span class="mini-tag">Recommended</span>
+                    </div>
+                    <p class="strategy-desc">Iteratively fine-tunes DPI (72–180) & JPEG quality to maximize visual clarity while strictly obeying size limit.</p>
+                  </div>
+                </label>
+
+                <label class="strategy-card" for="strategyStrict">
+                  <input type="radio" name="compressionStrategy" id="strategyStrict" value="strict">
+                  <div class="strategy-content">
+                    <div class="strategy-name">
+                      <span>Strict Ceiling</span>
+                    </div>
+                    <p class="strategy-desc">Applies an extra safety margin (~15% below target) for rigid government / university upload portals.</p>
+                  </div>
+                </label>
+
+                <label class="strategy-card" for="strategyLossless">
+                  <input type="radio" name="compressionStrategy" id="strategyLossless" value="lossless">
+                  <div class="strategy-content">
+                    <div class="strategy-name">
+                      <span>Lossless Stream Only</span>
+                    </div>
+                    <p class="strategy-desc">Optimizes PDF object streams & metadata without rasterizing. Keeps pure vector text 100% untouched.</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Compress Action CTA Button -->
+            <div class="action-cta-wrapper">
+              <button type="button" id="startCompressBtn" class="btn btn-primary btn-glow btn-lg">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <polyline points="4 14 10 14 10 20"></polyline>
+                  <polyline points="20 10 14 10 14 4"></polyline>
+                  <line x1="14" y1="10" x2="21" y2="3"></line>
+                  <line x1="3" y1="21" x2="10" y2="14"></line>
+                </svg>
+                <span id="compressBtnText">Compress to Target (1.0 MB)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           TOOL 2: SPLIT PDF
+           ======================================================== -->
+      <section id="toolSectionSplit" class="tool-panel hidden">
+        <div class="card">
+          <div class="section-heading">
+            <div class="heading-with-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="6" cy="6" r="3"></circle>
+                <circle cx="6" cy="18" r="3"></circle>
+                <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+              </svg>
+              <h3>Split & Extract Pages</h3>
+            </div>
+            <span class="heading-badge">Instant Client-Side</span>
+          </div>
+
+          <p class="setting-desc">
+            Extract specific pages or page ranges into a new PDF, or export every single page into separate PDF files.
+          </p>
+
+          <!-- Split Modes -->
+          <div class="split-modes-bar">
+            <label class="split-mode-pill active">
+              <input type="radio" name="splitMode" value="range" checked>
+              <span>Custom Page Range</span>
+            </label>
+            <label class="split-mode-pill">
+              <input type="radio" name="splitMode" value="allPages">
+              <span>Extract All Pages (ZIP)</span>
+            </label>
+            <label class="split-mode-pill">
+              <input type="radio" name="splitMode" value="everyN">
+              <span>Split Every N Pages</span>
+            </label>
+          </div>
+
+          <!-- Range Input Box -->
+          <div id="splitRangeBox" class="split-input-group">
+            <label for="splitRangeInput" class="input-label">Enter page numbers or ranges (e.g. 1-2, 3):</label>
+            <div class="input-with-actions">
+              <input type="text" id="splitRangeInput" class="text-input" placeholder="e.g. 1-2, 3">
+              <button type="button" id="splitSelectAllBtn" class="btn btn-secondary btn-sm">Select All</button>
+              <button type="button" id="splitClearBtn" class="btn btn-ghost btn-sm">Clear</button>
+            </div>
+            <div class="selection-summary-text" id="splitSelectionSummary">Selected: Pages 1, 2, 3 (3 pages total)</div>
+          </div>
+
+          <!-- Every N Pages Box (Hidden by default) -->
+          <div id="splitEveryNBox" class="split-input-group hidden">
+            <label for="splitEveryNInput" class="input-label">Split document into files of N pages each:</label>
+            <div class="number-stepper">
+              <button type="button" id="everyNStepDown" class="step-btn">−</button>
+              <input type="number" id="splitEveryNInput" value="1" min="1" max="100">
+              <button type="button" id="everyNStepUp" class="step-btn">+</button>
+            </div>
+          </div>
+
+          <!-- Visual Page Thumbnails Grid -->
+          <div class="page-grid-header">
+            <h4>Click thumbnails to select pages:</h4>
+            <span class="grid-hint">Interactive Visual Selector</span>
+          </div>
+          <div id="splitThumbnailsGrid" class="page-thumbnails-grid">
+            <!-- Dynamic page thumbnail cards will appear here -->
+          </div>
+
+          <div class="action-cta-wrapper">
+            <button type="button" id="executeSplitBtn" class="btn btn-primary btn-glow btn-lg">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="6" cy="6" r="3"></circle>
+                <circle cx="6" cy="18" r="3"></circle>
+                <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+              </svg>
+              <span id="splitBtnLabel">Extract Selected Pages (PDF)</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           TOOL 3: PDF TO IMAGE
+           ======================================================== -->
+      <section id="toolSectionToImage" class="tool-panel hidden">
+        <div class="card">
+          <div class="section-heading">
+            <div class="heading-with-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+              <h3>Convert PDF to Images</h3>
+            </div>
+            <span class="heading-badge">PNG • JPEG • WebP</span>
+          </div>
+
+          <p class="setting-desc">
+            Render and export every page as high-resolution graphics. Download individual pages or download all as a ZIP archive.
+          </p>
+
+          <!-- Format & DPI Settings -->
+          <div class="image-settings-grid">
+            <div class="setting-block">
+              <span class="block-label">Image Format:</span>
+              <div class="segmented-control" role="radiogroup">
+                <button type="button" class="segment-btn active" data-img-format="png">PNG (Lossless)</button>
+                <button type="button" class="segment-btn" data-img-format="jpeg">JPEG</button>
+                <button type="button" class="segment-btn" data-img-format="webp">WebP</button>
+              </div>
+            </div>
+
+            <div class="setting-block">
+              <span class="block-label">Resolution / DPI:</span>
+              <div class="segmented-control" role="radiogroup">
+                <button type="button" class="segment-btn" data-dpi="72">72 DPI (Web)</button>
+                <button type="button" class="segment-btn active" data-dpi="150">150 DPI (Print)</button>
+                <button type="button" class="segment-btn" data-dpi="300">300 DPI (Ultra)</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Convert CTA -->
+          <div class="action-cta-wrapper">
+            <button type="button" id="startConvertImagesBtn" class="btn btn-primary btn-glow btn-lg">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+              <span>Convert Pages to Images</span>
+            </button>
+          </div>
+
+          <!-- Image Export Results Grid (Hidden initially) -->
+          <div id="imageResultsContainer" class="image-results-container hidden">
+            <div class="results-header-bar">
+              <h4>Converted Images (<span id="convertedImagesCount">0</span> Pages)</h4>
+              <button type="button" id="downloadAllImagesZipBtn" class="btn btn-secondary btn-sm">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Download All Images (ZIP)
+              </button>
+            </div>
+            <div id="imageCardsGrid" class="image-cards-grid">
+              <!-- Rendered image cards will be placed here -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           TOOL 4: ENCRYPT PDF (PASSWORD PROTECT)
+           ======================================================== -->
+      <section id="toolSectionEncrypt" class="tool-panel hidden">
+        <div class="card">
+          <div class="section-heading">
+            <div class="heading-with-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <h3>Encrypt & Password Protect PDF</h3>
+            </div>
+            <span class="heading-badge">AES-256 Bit Encryption</span>
+          </div>
+
+          <p class="setting-desc">
+            Protect your sensitive documents with military-grade AES-256 bit encryption. Anyone opening the PDF will be required to enter the password.
+          </p>
+
+          <div class="security-form-wrapper">
+            <div class="input-form-group">
+              <label for="encryptPasswordInput" class="input-label">Set Document Password:</label>
+              <div class="password-input-wrapper">
+                <input type="password" id="encryptPasswordInput" class="text-input" placeholder="Enter secure password">
+                <button type="button" class="toggle-pwd-btn" id="toggleEncryptPwdBtn" aria-label="Show password">👁</button>
+              </div>
+              <div class="password-meter-bar">
+                <div id="pwdStrengthFill" class="pwd-strength-fill" style="width: 0%;"></div>
+              </div>
+              <span id="pwdStrengthLabel" class="pwd-strength-label">Enter at least 4 characters</span>
+            </div>
+
+            <div class="input-form-group">
+              <label for="encryptPasswordConfirm" class="input-label">Confirm Password:</label>
+              <input type="password" id="encryptPasswordConfirm" class="text-input" placeholder="Re-type password">
+            </div>
+
+            <div class="encryption-specs">
+              <div class="spec-item">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                <span>Algorithm: <strong>AES-256 (Standard Acrobat Compatible)</strong></span>
+              </div>
+              <div class="spec-item">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Restricts unauthorized viewing, printing, and extraction without password</span>
+              </div>
+            </div>
+
+            <div class="action-cta-wrapper">
+              <button type="button" id="executeEncryptBtn" class="btn btn-primary btn-glow btn-lg">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <span>Encrypt & Protect PDF</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           TOOL 5: DECRYPT PDF / REMOVE LOCK
+           ======================================================== -->
+      <section id="toolSectionDecrypt" class="tool-panel hidden">
+        <div class="card">
+          <div class="section-heading">
+            <div class="heading-with-icon">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+              </svg>
+              <h3>Decrypt & Remove Lock</h3>
+            </div>
+            <span class="heading-badge">Permanent Lock Removal</span>
+          </div>
+
+          <p class="setting-desc">
+            Remove password protection and printing/editing restrictions permanently. Enter the current document password once to save a completely unlocked PDF.
+          </p>
+
+          <div class="security-form-wrapper">
+            <div id="decryptStatusCard" class="lock-status-card">
+              <div class="lock-icon-circle">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </div>
+              <div class="lock-status-text">
+                <h4 id="decryptCardTitle">Password-Protected Document</h4>
+                <p id="decryptCardDesc">Enter the document password to decrypt the streams and permanently remove all locks.</p>
+              </div>
+            </div>
+
+            <div class="input-form-group">
+              <label for="decryptPasswordInput" class="input-label">Enter PDF Password:</label>
+              <div class="password-input-wrapper">
+                <input type="password" id="decryptPasswordInput" class="text-input" placeholder="Enter document password">
+                <button type="button" class="toggle-pwd-btn" id="toggleDecryptPwdBtn" aria-label="Show password">👁</button>
+              </div>
+            </div>
+
+            <div class="action-cta-wrapper">
+              <button type="button" id="executeDecryptBtn" class="btn btn-primary btn-glow btn-lg">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                </svg>
+                <span>Decrypt & Remove Lock</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           GENERIC LIVE PROGRESS CARD (Shared across tools)
+           ======================================================== -->
+      <section id="progressSection" class="card progress-card hidden">
+        <div class="progress-header">
+          <div class="progress-title-wrapper">
+            <div class="spinner-icon"></div>
+            <h3 id="progressMainTitle">Processing Document...</h3>
+          </div>
+          <span id="progressPercentage" class="progress-percentage">0%</span>
+        </div>
+
+        <div class="progress-bar-track">
+          <div id="progressBarFill" class="progress-bar-fill" style="width: 0%;">
+            <div class="progress-shimmer"></div>
+          </div>
+        </div>
+
+        <div class="progress-status-subtext" id="progressStatusText">
+          Initializing PDF engine...
+        </div>
+
+        <!-- Live Step Logs -->
+        <div class="log-stream-container">
+          <div class="log-stream-header">
+            <span>Execution Log</span>
+            <span class="live-dot">LIVE</span>
+          </div>
+          <div id="engineLogStream" class="log-stream-content">
+            <!-- Dynamic log entries will appear here -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================
+           RESULTS & ACTION SECTION (Shared / Universal)
+           ======================================================== -->
+      <section id="resultsSection" class="card results-card hidden">
+        <div class="result-celebration">
+          <div class="success-icon-badge">
+            <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <div class="result-headline">
+            <h2 id="resultStatusHeadline">Operation Completed Successfully!</h2>
+            <p id="resultStatusDetail">Your processed file is ready for download.</p>
+          </div>
+        </div>
+
+        <!-- Metric Comparison Cards Grid (Shown for compression) -->
+        <div id="metricsGrid" class="metrics-grid">
+          <div class="metric-card">
+            <span class="metric-label">Original Size</span>
+            <span id="resOriginalSize" class="metric-val">2.66 MB</span>
+            <span id="resOriginalBytes" class="metric-sub">2,663,153 bytes</span>
+          </div>
+
+          <div class="metric-card">
+            <span class="metric-label">Target Limit</span>
+            <span id="resTargetLimit" class="metric-val">1.00 MB</span>
+            <span id="resTargetLimitBytes" class="metric-sub">1,048,576 bytes</span>
+          </div>
+
+          <div class="metric-card metric-card-highlight">
+            <span class="metric-label">Final Output</span>
+            <span id="resCompressedSize" class="metric-val highlight">884 KB</span>
+            <span id="resTargetStatusBadge" class="target-met-badge">✓ Under Target Limit</span>
+          </div>
+
+          <div class="metric-card">
+            <span class="metric-label">Total Savings</span>
+            <span id="resSavingsPct" class="metric-val savings">-66.8%</span>
+            <span id="resSavingsBytes" class="metric-sub">Saved 1.78 MB</span>
+          </div>
+        </div>
+
+        <!-- Interactive Visual Preview Inspection (For Compression) -->
+        <div id="previewSection" class="preview-section">
+          <div class="preview-header">
+            <div class="preview-title">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <span>Visual Quality Comparison</span>
+            </div>
+
+            <div class="preview-controls">
+              <button type="button" id="prevPageBtn" class="preview-nav-btn" aria-label="Previous Page">‹</button>
+              <span id="previewPageIndicator" class="preview-page-text">Page 1 of 3</span>
+              <button type="button" id="nextPageBtn" class="preview-nav-btn" aria-label="Next Page">›</button>
+            </div>
+          </div>
+
+          <div class="preview-canvas-container">
+            <div class="preview-panel">
+              <div class="panel-tag original-tag">Original Rendering</div>
+              <div class="canvas-scroll-box">
+                <canvas id="originalPreviewCanvas" width="400" height="550"></canvas>
+              </div>
+            </div>
+
+            <div class="preview-panel">
+              <div class="panel-tag compressed-tag">Processed Rendering</div>
+              <div class="canvas-scroll-box">
+                <canvas id="compressedPreviewCanvas" width="400" height="550"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Download & Next Action Row -->
+        <div class="result-actions">
+          <button type="button" id="downloadPdfBtn" class="btn btn-primary btn-glow btn-lg download-btn">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span id="downloadBtnText">Download Result</span>
+          </button>
+
+          <button type="button" id="recompressBtn" class="btn btn-secondary btn-lg">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            Adjust & Re-process
+          </button>
+
+          <button type="button" id="startOverBtn" class="btn btn-ghost btn-lg">
+            Process Another PDF
+          </button>
+        </div>
+      </section>
+
+      <!-- Suite Feature Grid -->
+      <section class="features-grid">
+        <div class="feature-item">
+          <div class="feature-icon">🗜️</div>
+          <h4>Target-Size Compression</h4>
+          <p>Adaptive DPI and quantization algorithm hits your intended file size limit while preserving maximum visual sharpness.</p>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-icon">✂️</div>
+          <h4>Visual Page Splitter</h4>
+          <p>Click page thumbnails to extract custom ranges or burst every page into individual PDFs packaged in a convenient ZIP.</p>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-icon">🖼️</div>
+          <h4>PDF to Crisp Images</h4>
+          <p>Convert document pages to PNG, JPEG, or WebP up to 300 DPI ultra-high definition with batch ZIP download.</p>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-icon">🔒</div>
+          <h4>AES-256 Encryption</h4>
+          <p>Apply Acrobat-standard AES-256 bit password encryption to safeguard sensitive contracts and personal data.</p>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-icon">🔓</div>
+          <h4>Lock Removal & Decrypt</h4>
+          <p>Strip document passwords, unlock restricted permissions, and export clean unrestricted PDF documents.</p>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-icon">⚡</div>
+          <h4>macOS & Windows Ready</h4>
+          <p>Runs smoothly on both operating systems. 100% offline-capable with zero external dependencies.</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>PicoPDF &bull; Minimalist & Private Local PDF Suite &bull; macOS & Windows</p>
+      <p class="footer-sub">CLI tool included: <code>python pdf_tools_cli.py &lt;command&gt;</code></p>
+    </footer>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- Main Application Script -->
+  <script src="app.js"></script>
+</body>
+</html>

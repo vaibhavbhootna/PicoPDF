@@ -1,0 +1,28 @@
+{
+  "name": "picopdf",
+  "version": "1.0.0",
+  "description": "Minimalist, private, cross-platform PDF tools suite for macOS and Windows. Compress to exact target size, Split, Convert to Image, Encrypt, and Decrypt without cloud uploads.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js --open",
+    "serve": "node server.js",
+    "dev": "node server.js",
+    "cli": "python3 pdf_tools_cli.py"
+  },
+  "keywords": [
+    "picopdf",
+    "pdf",
+    "compression",
+    "target-size",
+    "split-pdf",
+    "pdf-to-image",
+    "encrypt-pdf",
+    "decrypt-pdf",
+    "privacy-first",
+    "cross-platform",
+    "macos",
+    "windows"
+  ],
+  "author": "Gunjan Malhotra",
+  "license": "MIT"
+}
